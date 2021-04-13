@@ -75,7 +75,7 @@ flags.DEFINE_bool(
     "do_predict", False,
     "Whether to run the model in inference mode on the test set.")
 
-flags.DEFINE_integer("train_batch_size", 32, "Total batch size for training.")
+flags.DEFINE_integer("train_batch_size", 1, "Total batch size for training.")
 
 flags.DEFINE_integer("eval_batch_size", 8, "Total batch size for eval.")
 
@@ -372,6 +372,40 @@ class ColaProcessor(DataProcessor):
       examples.append(
           InputExample(guid=guid, text_a=text_a, text_b=None, label=label))
     return examples
+
+
+class DemoProcessor(DataProcessor):
+    """Process for Demo Data Set."""
+    def __init__(self):
+        self.labels = set()
+
+    def get_train_examples(self, data_dir):
+        """See base class"""
+        return self._create_examples(
+            self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+
+    def get_dev_examples(self, data_dir):
+        return self._create_examples(
+            self._read_tsv(os.path.join(data_dir, "dev.tsv")), "dev")
+
+    def get_test_examples(self, data_dir):
+        return self._create_examples(
+            self._read_tsv(os.path.join(data_dir, "test.tsv")), "test")
+
+    def get_labels(self):
+        return ["fashion", "houseliving", "game"]  # 根据 label 自定义
+
+    def _create_examples(self, lines, set_type):
+        examples = []
+        for (i, line) in enumerate(lines):
+            guid = '%s-%s' % (set_type, i)
+            text_a = tokenization.convert_to_unicode(line[1])
+            label = tokenization.convert_to_unicode(line[0])
+            self.labels.add(label)
+            examples.append(
+                InputExample(guid=guid, text_a=text_a, text_b=None, label=label)
+            )
+        return examples
 
 
 def convert_single_example(ex_index, example, label_list, max_seq_length,
@@ -788,6 +822,7 @@ def main(_):
       "mnli": MnliProcessor,
       "mrpc": MrpcProcessor,
       "xnli": XnliProcessor,
+      "demo": DemoProcessor
   }
 
   tokenization.validate_case_matches_checkpoint(FLAGS.do_lower_case,
